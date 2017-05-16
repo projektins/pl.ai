@@ -27,18 +27,18 @@ print_list(N, [H|T]) :-
 %% Shakey - recursive forward solution searcher %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-solve(State, Goal, Plan, Plan):-
+solve(State, Goal, _, Actions):-
     subset(Goal, State), %% check wheter the goal is a subset of the actual state
     write('finished!'),
-    print_list(5, Plan).
+    print_list(5, Actions).
 
-solve(State, Goal, Sofar, Plan):-
-    action(ActionName, Preconditions, DeleteList, AddList), %% calles the action
+solve(State, Goal, Sofar, Actions):-
+    action(ActionName, Preconditions, AddList, DeleteList), %% choose the right action
+    subset(Preconditions, State), %% checks if the preconditions of this action are valid
+    subtract(State, DeleteList, Remainder), %% deletes the given states from the current state list
+    append(Remainder, AddList, NewState), %% adds the given states to the current state list
     not(member(ActionName, Sofar)), %% checks if this action was already called
-    subset(Preconditions, State), %% checks whether the precondition is a subset of the actual state
-    delete(DeleteList, State, Remainder), %% deletes the given states from the current state list
-    append(AddList, Remainder, NewState), %% adds the given states to the current state list
-    solve(NewState, Goal, [ActionName|Sofar], Plan). %% recursively calls itself with the updated values
+    solve(NewState, Goal, [ActionName|Sofar], Actions), !. %% recursively calls itself with the updated values
 
 
 
@@ -56,12 +56,12 @@ run(S, E) :- solve(S, E, [S], []).
 test1 :-
     run(
         [connected(a, corridor), connected(b, corridor), connected(c, corridor), inroom(a)],
-        [inroom(corridor)]). %% move from room a to corridor
+        [connected(a, corridor), connected(b, corridor), connected(c, corridor), inroom(corridor)]). %% move from room a to corridor
 
 test2 :-
     run(
         [connected(a, corridor), connected(b, corridor), connected(c, corridor), inroom(a)],
-        [inroom(c)]). %% move from room a over corridor to room c
+        [connected(a, corridor), connected(b, corridor), connected(c, corridor), inroom(c)]). %% move from room a over corridor to room c
 
 
 
