@@ -11,38 +11,81 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Blocks world - initial state %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ontable(A).
-on(B, A).
-ontable(C).
+
+ontable(a).
+ontable(c).
+on(b, a).
 handempty().
-clear(B).
+clear(b).
+clear(c).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Blocks world - actions %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
- pickup(X)
-  - Precondition = ontable(X), handempty(), clear(X)
-  - Add Effect = holding(X)
-  - Delete Effect = ontable(X), handempty(), clear(X)
 
- putdown(X)
-  - Precondition = holding(X)
-  - Add Effect = ontable(X), handempty(), clear(X)
-  - Delete Effect = holding(X)
+pickup(X) :- [ontable(X), handempty(), clear(X)],[add(holding(X)), del(ontable(X)), del(handempty()), del(clear(X))].
 
- stack(X,Y)
-  - Precondition = holding(X), clear(X)
-  - Add Effect = on(X, Y), handempty(), clear(X)
-  - Delete Effect = clear( Y), holding(X)
+putdown(X) :- holding(X), [add(ontable(X)), add(handempty()), add(clear(X)), del(holding(X))].
 
- unstack(X,Y)
-  - Precondition = handempty(), clear(X), on(X, Y)
-  - Add Effect = holding(X), clear( Y)
-  - Delete Effect = clear(X), handempty(), on(X, Y)
+stack(X) :- [holding(X), clear(X)], [add(on(X,Y)), add(handempty()), add(clear(X)), del(clea(Y)), del(holding(X))].
 
- move(X,Y,Z)
-  - Precondition = on(x, y), clear(x), clear(z)
-  - Add Effect = on(x, z), clear(y), clear(Fl)
-  - Delete Effect = clear(z), on(x, y)
+unstack(X) :- [handempty(), clear(X), on(X,Y)], [add(holing(X)), add(clear(Y)), del(cler(X)), del(handempty()), del(on(X,Y))].
+
+move(X,Y,Z) :- [on(X,Y), clear(X), clear(Z)], [add(on(X,Y)), add(clear(Y)), add(clear(f1)), del(clear(Z)), del(on(X,Y))].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
