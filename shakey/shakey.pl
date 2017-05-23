@@ -4,21 +4,27 @@
 
 add_fixed_states(X, Result) :-
     append(X, [
-               connected(a, corridor),
-               connected(b, corridor),
-               connected(c, corridor)
+               connected(room1, corridor),
+               connected(room2, corridor),
+               connected(room3, corridor)
            ], Result).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - variable states %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - help output %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-print_variable_states :-
-    write('Possible parameters (rooms) = a, b, c, corridor'), nl,
-    write('- inroom(X)'), nl,
-    write('- doorOpen(X, Y)'), nl.
-
+help :-
+    write('Fixed conditions:'), nl,
+    write('- connected(room1, corridor)'), nl,
+    write('- connected(room2, corridor)'), nl,
+    write('- connected(room3, corridor)'), nl,
+    write('Possible conditions to set:'), nl,
+    write('- inRoom(roomName)'), nl,
+    write('- doorOpen(roomName1, roomName2)'), nl,
+    write('- boxInRoom(boxName, roomName)'), nl,
+    write('- boxInHand(boxName)'), nl,
+    write('- handEmpty()'), nl.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,33 +32,55 @@ print_variable_states :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 action(
-    move(X,Y),
-    [inroom(X), connected(X,Y)],
-    [inroom(Y)],
-    [inroom(X)]).
+    move(roomName1, roomName2),
+    [inRoom(roomName1), connected(roomName1, roomName2), doorOpen(roomName1, roomName2)],
+    [inRoom(roomName2)],
+    [inRoom(roomName1)]).
 
 action(
-    openDoor(X,Y),
-    [connected(X,Y), not(doorOpen(X,Y)), (inroom(X); inroom(Y))],
-    [doorOpen(X,Y)],
+    openDoor(roomName1, roomName2),
+    [connected(roomName1, roomName2), inRoom(roomName1)],
+    [doorOpen(roomName1, roomName2)],
     []).
 
 action(
-    closeDoor(X,Y),
-    [connected(X,Y), doorOpen(X,Y), (inroom(X); inroom(Y))],
+    closeDoor(roomName1, roomName2),
+    [connected(roomName1, roomName2), doorOpen(roomName1, roomName2), inRoom(roomName1)],
     [],
-    [doorOpen(X,Y)]).
+    [doorOpen(roomName1,roomName2)]).
+
+action(
+    takeBox(boxName, roomName),
+    [boxInRoom(boxName, roomName), inRoom(roomName), handEmpty()],
+    [boxInHand(boxName)],
+    [boxInRoom(boxName,roomName), handEmpty()]).
+
+action(
+    putBox(boxName, roomName),
+    [boxInHand(boxName), inRoom(roomName)],
+    [boxInRoom(boxName, roomName), handEmpty()],
+    [boxInHand(boxName)]).
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - recursive way to print a list %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - recursively print a list %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 print_list([]).
 print_list([X|List]) :-
-    write(X),nl,
+    write(X), nl,
     print_list(List).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - recursively reverse a list %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+reverse_list(Inputlist, Outputlist):-
+    reverse(Inputlist, [], Outputlist).
+reverse([], Outputlist, Outputlist).
+reverse([Head|Tail], List1, List2):-
+    reverse(Tail, [Head|List1], List2).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +90,8 @@ print_list([X|List]) :-
 solve(State, Goal, _, Actions):-
     subset(Goal, State), %% check wheter the goal is a subset of the actual state
     write('finished with the following actions:'), nl,
-    print_list(Actions).
+    reverse_list(Actions, ReversedActions),
+    print_list(ReversedActions).
 
 solve(State, Goal, Sofar, Actions):-
     action(ActionName, Preconditions, AddList, DeleteList), %% choose next action
@@ -78,10 +107,10 @@ solve(State, Goal, Sofar, Actions):-
 %% Shakey - runner with initial state and goal %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-run(S, E) :-
-    add_fixed_states(S, S2),
-    add_fixed_states(E, E2),
-    solve(S2, E2, [S2], []).
+run(Start, Goal) :-
+    add_fixed_states(Start, FullStart),
+    add_fixed_states(Goal, FullGoal),
+    solve(FullStart, FullGoal, [FullStart], []).
 
 
 %%%%%%%%%%%%%%%%%%%%
@@ -89,18 +118,55 @@ run(S, E) :-
 %%%%%%%%%%%%%%%%%%%%
 
 test1 :-
+    write('test1: move from room1 to corridor while the door is open'), nl,
     run(
-        [inroom(a)],
-        [inroom(corridor)]). %% move from room a to corridor
+        [inRoom(room1), doorOpen(room1, corridor)],
+        [inRoom(corridor), doorOpen(room1, corridor)]).
 
 test2 :-
+    write('test2: move from room1 to corridor while the door is closed'), nl,
     run(
-        [inroom(a)],
-        [inroom(c)]). %% move from room a over corridor to room c
+        [inRoom(room1)],
+        [inRoom(corridor), doorOpen(room1, corridor)]).
+
+test3 :-
+    write('test3: move from room1 to corridor while the door is open and close it afterwards'), nl,
+    run(
+        [inRoom(room1), doorOpen(room1, corridor)],
+        [inRoom(corridor)]).
+
+test4 :-
+    write('test4: move from room1 to corridor while the door is closed and close it afterwards'), nl,
+    run(
+        [inRoom(room1)],
+        [inRoom(corridor)]).
+
+test5 :-
+    write('test5: take the box1 from room1 in the hand'), nl,
+    run(
+        [inRoom(room1), handempty(), boxInRoom(box1, room1)],
+        [inRoom(room1), boxInHand(box1)]).
+
+test6 :-
+    write('test6: put the box1 from the hand in the room1'), nl,
+    run(
+        [inRoom(room1), boxInHand(box1)],
+        [inRoom(room1), handempty(), boxInRoom(box1, room1)]).
+
+test7 :-
+    write('test7: take the box1 from room1, move to corridor and put the box1 in the corridor'), nl,
+    run(
+        [inRoom(room1), boxInRoom(box1, room1)],
+        [inRoom(corridor), boxInRoom(box1, corridor)]).
 
 
-
-
-
+runAllTests :-
+    test1,
+    test2,
+    test3,
+    test4,
+    test5,
+    test6,
+    test7.
 
 
