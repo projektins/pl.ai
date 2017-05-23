@@ -14,7 +14,7 @@ add_fixed_states(X, Result) :-
 %% Shakey - help output %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-help :-
+shakey_help :-
     write('Fixed conditions:'), nl,
     write('- connected(room1, corridor)'), nl,
     write('- connected(room2, corridor)'), nl,
@@ -27,9 +27,9 @@ help :-
     write('- handEmpty()'), nl.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - actions (strips) %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - actions (order is important) %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 action(
     move(RoomName1, RoomName2),
@@ -51,47 +51,46 @@ action(
 
 action(
     closeDoor(RoomName1, RoomName2),
-    [connected(RoomName1, RoomName2), doorOpen(RoomName1, RoomName2), inRoom(RoomName1)], %% fixme: close the door from both sides...
+    [connected(RoomName1, RoomName2), doorOpen(RoomName1, RoomName2), inRoom(RoomName1)],
+    [],
+    [doorOpen(RoomName1,RoomName2)]).
+
+action(
+    closeDoor(RoomName1, RoomName2),
+    [connected(RoomName1, RoomName2), doorOpen(RoomName1, RoomName2), inRoom(RoomName2)],
     [],
     [doorOpen(RoomName1,RoomName2)]).
 
 action(
     openDoor(RoomName1, RoomName2),
-    [connected(RoomName1, RoomName2), inRoom(RoomName1)], %% fixme: open the door from both sides...
+    [connected(RoomName1, RoomName2), inRoom(RoomName2)],
+    [doorOpen(RoomName1, RoomName2)],
+    []).
+
+action(
+    openDoor(RoomName1, RoomName2),
+    [connected(RoomName1, RoomName2), inRoom(RoomName1)],
     [doorOpen(RoomName1, RoomName2)],
     []).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - recursively print a list %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - recursively print a list (last element first) %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-print_list([]).
-print_list([X|List]) :-
-    write(X), nl,
-    print_list(List).
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - recursively reverse a list %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-reverse_list(Inputlist, Outputlist):-
-    reverse(Inputlist, [], Outputlist).
-reverse([], Outputlist, Outputlist).
-reverse([Head|Tail], List1, List2):-
-    reverse(Tail, [Head|List1], List2).
+print_list_reversed([]).
+print_list_reversed([Head|Tail]) :-
+    print_list_reversed(Tail),
+    write('- '), write(Head), nl.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - recursive forward solution searcher %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - recursive depth-first solver %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(State, Goal, _, Actions):-
     subset(Goal, State), %% check wheter the goal is a subset of the actual state
-    write('finished with the following actions:'), nl,
-    reverse_list(Actions, ReversedActions),
-    print_list(ReversedActions).
+    print_list_reversed(Actions).
 
 solve(State, Goal, Sofar, Actions):-
     action(ActionName, Preconditions, AddList, DeleteList), %% choose next action
@@ -118,46 +117,46 @@ run(Start, Goal) :-
 %%%%%%%%%%%%%%%%%%%%
 
 test1 :-
-    write('test1: move from room1 to corridor while the door is open'), nl,
+    write('move from room1 to corridor while the door is open'), nl,
     run(
         [inRoom(room1), doorOpen(room1, corridor)],
         [inRoom(corridor), doorOpen(room1, corridor)]).
 
 test2 :-
-    write('test2: move from room1 to corridor while the door is closed'), nl,
+    write('move from room1 to corridor while the door is closed'), nl,
     run(
         [inRoom(room1)],
         [inRoom(corridor), doorOpen(room1, corridor)]).
 
 test3 :-
-    write('test3: move from room1 to corridor while the door is open and close it afterwards'), nl,
+    write('move from room1 to corridor while the door is open and close it afterwards'), nl,
     run(
         [inRoom(room1), doorOpen(room1, corridor)],
         [inRoom(corridor)]).
 
 test4 :-
-    write('test4: move from room1 to corridor while the door is closed and close it afterwards'), nl,
+    write('move from room1 to corridor while the door is closed and close it afterwards'), nl,
     run(
         [inRoom(room1)],
-        [inRoom(corridor), not(doorOpen(room1, corridor))]).
+        [inRoom(corridor)]).
 
 test5 :-
-    write('test5: take the box1 from room1 in the hand'), nl,
+    write('take the box1 from room1 in the hand'), nl,
     run(
         [inRoom(room1), handEmpty(), boxInRoom(box1, room1)],
         [inRoom(room1), boxInHand(box1)]).
 
 test6 :-
-    write('test6: put the box1 from the hand in the room1'), nl,
+    write('put the box1 from the hand in the room1'), nl,
     run(
         [inRoom(room1), boxInHand(box1)],
         [inRoom(room1), handEmpty(), boxInRoom(box1, room1)]).
 
 test7 :-
-    write('test7: take the box1 from room1, move to corridor and put the box1 in the corridor'), nl,
+    write('take the box1 from room1, move to corridor and put the box1 in the corridor'), nl,
     run(
-        [inRoom(room1), boxInRoom(box1, room1)],
-        [inRoom(corridor), boxInRoom(box1, corridor)]).
+        [inRoom(room1), boxInRoom(box1, room1), handEmpty()],
+        [inRoom(corridor), boxInRoom(box1, corridor), handEmpty()]).
 
 
 runAllTests :-
