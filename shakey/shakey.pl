@@ -20,10 +20,10 @@ help :-
     write('- connected(room2, corridor)'), nl,
     write('- connected(room3, corridor)'), nl,
     write('Possible conditions to set:'), nl,
-    write('- inRoom(roomName)'), nl,
-    write('- doorOpen(roomName1, roomName2)'), nl,
-    write('- boxInRoom(boxName, roomName)'), nl,
-    write('- boxInHand(boxName)'), nl,
+    write('- inRoom(RoomName)'), nl,
+    write('- doorOpen(RoomName1, RoomName2)'), nl,
+    write('- boxInRoom(BoxName, RoomName)'), nl,
+    write('- boxInHand(BoxName)'), nl,
     write('- handEmpty()'), nl.
 
 
@@ -32,34 +32,34 @@ help :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 action(
-    move(roomName1, roomName2),
-    [inRoom(roomName1), connected(roomName1, roomName2), doorOpen(roomName1, roomName2)],
-    [inRoom(roomName2)],
-    [inRoom(roomName1)]).
+    move(RoomName1, RoomName2),
+    [inRoom(RoomName1), connected(RoomName1, RoomName2), doorOpen(RoomName1, RoomName2)],
+    [inRoom(RoomName2)],
+    [inRoom(RoomName1)]).
 
 action(
-    openDoor(roomName1, roomName2),
-    [connected(roomName1, roomName2), inRoom(roomName1)],
-    [doorOpen(roomName1, roomName2)],
-    []).
+    takeBox(BoxName, RoomName),
+    [boxInRoom(BoxName, RoomName), inRoom(RoomName), handEmpty()],
+    [boxInHand(BoxName)],
+    [boxInRoom(BoxName, RoomName), handEmpty()]).
 
 action(
-    closeDoor(roomName1, roomName2),
-    [connected(roomName1, roomName2), doorOpen(roomName1, roomName2), inRoom(roomName1)],
+    putBox(BoxName, RoomName),
+    [boxInHand(BoxName), inRoom(RoomName)],
+    [boxInRoom(BoxName, RoomName), handEmpty()],
+    [boxInHand(BoxName)]).
+
+action(
+    closeDoor(RoomName1, RoomName2),
+    [connected(RoomName1, RoomName2), doorOpen(RoomName1, RoomName2), inRoom(RoomName1)], %% fixme: close the door from both sides...
     [],
-    [doorOpen(roomName1,roomName2)]).
+    [doorOpen(RoomName1,RoomName2)]).
 
 action(
-    takeBox(boxName, roomName),
-    [boxInRoom(boxName, roomName), inRoom(roomName), handEmpty()],
-    [boxInHand(boxName)],
-    [boxInRoom(boxName,roomName), handEmpty()]).
-
-action(
-    putBox(boxName, roomName),
-    [boxInHand(boxName), inRoom(roomName)],
-    [boxInRoom(boxName, roomName), handEmpty()],
-    [boxInHand(boxName)]).
+    openDoor(RoomName1, RoomName2),
+    [connected(RoomName1, RoomName2), inRoom(RoomName1)], %% fixme: open the door from both sides...
+    [doorOpen(RoomName1, RoomName2)],
+    []).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,19 +139,19 @@ test4 :-
     write('test4: move from room1 to corridor while the door is closed and close it afterwards'), nl,
     run(
         [inRoom(room1)],
-        [inRoom(corridor)]).
+        [inRoom(corridor), not(doorOpen(room1, corridor))]).
 
 test5 :-
     write('test5: take the box1 from room1 in the hand'), nl,
     run(
-        [inRoom(room1), handempty(), boxInRoom(box1, room1)],
+        [inRoom(room1), handEmpty(), boxInRoom(box1, room1)],
         [inRoom(room1), boxInHand(box1)]).
 
 test6 :-
     write('test6: put the box1 from the hand in the room1'), nl,
     run(
         [inRoom(room1), boxInHand(box1)],
-        [inRoom(room1), handempty(), boxInRoom(box1, room1)]).
+        [inRoom(room1), handEmpty(), boxInRoom(box1, room1)]).
 
 test7 :-
     write('test7: take the box1 from room1, move to corridor and put the box1 in the corridor'), nl,
