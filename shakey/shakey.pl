@@ -36,13 +36,19 @@ shakey_help :-
     write('- status(Object, StatusName)'), nl.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Shakey - actions (order is important) %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - actions %%
+%%%%%%%%%%%%%%%%%%%%%%
 
 action(
     move(From, To),
-    [in(shakey, From), connected(From, To), status(door1, open)],
+    [in(shakey, From), connected(From, To), connected(From, Door), connected(To, Door), status(Door, open)],
+    [in(shakey, To)],
+    [in(shakey, From)]).
+
+action(
+    move(From, To),
+    [in(shakey, From), connected(To, From), connected(From, Door), connected(To, Door), status(Door, open)],
     [in(shakey, To)],
     [in(shakey, From)]).
 
@@ -81,12 +87,32 @@ print_list_reversed([Head|Tail]) :-
     write('- '), write(Head), nl.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - subset checker                                       %%
+%% the subset/2 from swi does not work cause of this reason:     %%
+%% https://stackoverflow.com/questions/4912869/subsets-in-prolog %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+subset([Head|Tail], Set):-
+    member(Head, Set),
+    subset(Tail, Set).
+subset([], _).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - equal lists checker %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+equal_lists(List1, List2) :-
+	subset(List1, List2),
+	subset(List2, List1).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Shakey - recursive depth-first solver %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(State, Goal, Actions):-
-    subset(Goal, State), %% check wheter the goal is a subset of the actual state
+    equal_lists(Goal, State), %% checks wheter the goal and the state are equal
     print_list_reversed(Actions).
 
 solve(State, Goal, Actions):-
@@ -96,7 +122,6 @@ solve(State, Goal, Actions):-
     subtract(State, DeleteList, Remainder), %% deletes the given states from the current state list
     append(Remainder, AddList, NewState), %% adds the given states to the current state list
     solve(NewState, Goal, [ActionName|Actions]), !. %% recursively calls itself with the updated values
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,10 +181,16 @@ test7 :-
         [in(shakey, corridor), in(box1, corridor), in(nothing, shakeysHand), status(door1, open)]).
 
 test8 :-
-    write('move from room1 over corridor to room3'), nl,
+    write('move from room1 over corridor to room3 with open doors'), nl,
     run(
-        [in(shakey, room1)],
-        [in(shakey, room3)]).
+        [in(shakey, room1), status(door1, open), status(door3, open)],
+        [in(shakey, room3), status(door1, open), status(door3, open)]).
+
+test9 :-
+    write('take the box1 from room1, move to room3, put the box1 in room3, move to room2, take the box2 from room2, move to room1, put the box2 to room1 (all doors are closed and must be closed afterwards)'), nl,
+    run(
+        [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), in(box2, room2), status(door1, closed), status(door2, closed), status(door3, closed)],
+        [in(shakey, room1), in(nothing, shakeysHand), in(box1, room3), in(box2, room1), status(door1, closed), status(door2, closed), status(door3, closed)]).
 
 
 runAllTests :-
@@ -170,4 +201,5 @@ runAllTests :-
     test5,
     test6,
     test7,
-    test8.
+    test8,
+    test9.
