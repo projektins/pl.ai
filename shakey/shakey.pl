@@ -66,7 +66,6 @@ action(
     [in(shakey, To)],
     [in(shakey, From)]).
 
-
 action(
     put(ObjectName, RoomName),
     [object(ObjectName), room(RoomName), in(ObjectName, shakeysHand), in(shakey, RoomName)],
@@ -137,7 +136,7 @@ equal_lists(List1, List2) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 solve(StateList, GoalList, _, ActionList):-
-    equal_lists(GoalList, StateList), %% checks whehter the goal and the state are equal
+    equal_lists(GoalList, StateList), %% checks whether the goal and the state are equal
     print_list_reversed(ActionList).
 
 solve(StateList, GoalList, Sofar, ActionList):-
@@ -164,119 +163,85 @@ run(Start, Goal) :-
 %% Shakey - tests %%
 %%%%%%%%%%%%%%%%%%%%
 
-test1 :-
-    write('move from room1 to corridor while the door is open'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), status(door1, open)],
-        [in(shakey, corridor), status(door1, open)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-    
-test2 :-
-    write('move from room1 to corridor while the door is closed'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), status(door1, closed)],
-        [in(shakey, corridor), status(door1, open)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
+test(
+    1,
+    'move from room1 to corridor while the door is open',
+    [in(shakey, room1), status(door1, open)],
+    [in(shakey, corridor), status(door1, open)]).
 
-test3 :-
-    write('move from room1 to corridor while the door is open and close it afterwards'), nl,
+test(
+    2,
+    'move from room1 to corridor while the door is closed',
+    [in(shakey, room1), status(door1, closed)],
+    [in(shakey, corridor), status(door1, open)]).
+
+test(
+    3,
+    'move from room1 to corridor while the door is open and close it afterwards',
+    [in(shakey, room1), status(door1, open)],
+    [in(shakey, corridor), status(door1, closed)]).
+
+test(
+    4,
+    'move from room1 to corridor while the door is closed and close it afterwards',
+    [in(shakey, room1), status(door1, closed)],
+    [in(shakey, corridor), status(door1, closed)]).
+
+test(
+    5,
+    'take the box1 from room1 in the hand',
+    [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), object(box1)],
+    [in(shakey, room1), in(box1, shakeysHand), object(box1)]).
+
+test(
+    6,
+    'put the box1 from the hand in the room1',
+    [in(shakey, room1), in(box1, shakeysHand), object(box1)],
+    [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), object(box1)]).
+
+test(
+    7,
+    'take the box1 from room1, move to corridor and put the box1 in the corridor',
+    [in(shakey, room1), in(box1, room1), in(nothing, shakeysHand), status(door1, closed), object(box1)],
+    [in(shakey, corridor), in(box1, corridor), in(nothing, shakeysHand), status(door1, open), object(box1)]).
+
+test(
+    8,
+    'move from room1 over corridor to room3 with open doors',
+    [in(shakey, room1), status(door1, open), status(door3, open)],
+    [in(shakey, room3), status(door1, open), status(door3, open)]).
+
+test(
+    9,
+    'take the box1 from room1, move to room3 and put the box1 in the room3 (all doors closed and must be closed afterwards)',
+    [in(shakey, room1), in(box1, room1), in(nothing, shakeysHand), status(door1, closed), status(door3, closed), object(box1)],
+    [in(shakey, room3), in(box1, room3), in(nothing, shakeysHand), status(door1, closed), status(door3, closed), object(box1)]).
+
+test(
+    10,
+    'take the box1 from room1, move to room3, put the box1 in room3, move to room2, take the box2 from room2, move to room1, put the box2 to room1 (all doors are closed and must be closed afterwards)',
+    [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), in(box2, room2), status(door1, closed), status(door2, closed), status(door3, closed), object(box1), object(box2)],
+    [in(shakey, room1), in(nothing, shakeysHand), in(box1, room3), in(box2, room1), status(door1, closed), status(door2, closed), status(door3, closed), object(box1), object(box2)]).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Shakey - recursive testrunner %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+test([]).
+test([Head|Tail]) :-
+    test(Head, Instruction, StartState, GoalState),
+    nl, write('Test '), write(Head), write(': '), write(Instruction), nl,
     statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), status(door1, open)],
-        [in(shakey, corridor), status(door1, closed)]),
+    run(StartState, GoalState),
     statistics(walltime, [End,_]),
     Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test4 :-
-    write('move from room1 to corridor while the door is closed and close it afterwards'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), status(door1, closed)],
-        [in(shakey, corridor), status(door1, closed)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test5 :-
-    write('take the box1 from room1 in the hand'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), object(box1)],
-        [in(shakey, room1), in(box1, shakeysHand), object(box1)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test6 :-
-    write('put the box1 from the hand in the room1'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), in(box1, shakeysHand), object(box1)],
-        [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), object(box1)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test7 :-
-    write('take the box1 from room1, move to corridor and put the box1 in the corridor'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), in(box1, room1), in(nothing, shakeysHand), status(door1, closed), object(box1)],
-        [in(shakey, corridor), in(box1, corridor), in(nothing, shakeysHand), status(door1, open), object(box1)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test8 :-
-    write('move from room1 over corridor to room3 with open doors'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), status(door1, open), status(door3, open)],
-        [in(shakey, room3), status(door1, open), status(door3, open)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test9 :-
-    write('take the box1 from room1, move to room3 and put the box1 in the room3 (all doors closed and must be closed afterwards)'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), in(box1, room1), in(nothing, shakeysHand), status(door1, closed), status(door3, closed), object(box1)],
-        [in(shakey, room3), in(box1, room3), in(nothing, shakeysHand), status(door1, closed), status(door3, closed), object(box1)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
-test10 :-
-    write('take the box1 from room1, move to room3, put the box1 in room3, move to room2, take the box2 from room2, move to room1, put the box2 to room1 (all doors are closed and must be closed afterwards)'), nl,
-    statistics(walltime, [Start,_]),
-    run(
-        [in(shakey, room1), in(nothing, shakeysHand), in(box1, room1), in(box2, room2), status(door1, closed), status(door2, closed), status(door3, closed), object(box1), object(box2)],
-        [in(shakey, room1), in(nothing, shakeysHand), in(box1, room3), in(box2, room1), status(door1, closed), status(door2, closed), status(door3, closed), object(box1), object(box2)]),
-    statistics(walltime, [End,_]),
-    Time is End - Start,
-    write('elapsed time: '), write(Time), write('ms'), nl.
-
+    write('elapsed time: '), write(Time), write('ms'), nl,
+    test(Tail).
 
 runAllTests :-
-	statistics(walltime, [Start,_]),
-    test1,
-    test2,
-    test3,
-    test4,
-    test5,
-    test6,
-    test7,
-    test8,
-    test9,
-    test10,
+    statistics(walltime, [Start,_]),
+    test([1,2,3,4,5,6,7,8,9,10]),
     statistics(walltime, [End,_]),
     Time is End - Start,
     write('total elapsed time: '), write(Time), write('ms').
