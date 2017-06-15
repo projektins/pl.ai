@@ -10,22 +10,31 @@
 
 add_fixed_states(X, Result) :-
     append(X, [
-		   room(room1),
-		   room(room2),
-		   room(room3),
-		   room(corridor),
-		   door(door1),
-		   door(door2),
-		   door(door3),
+           room(room1),
+           room(room2),
+           room(room3),
+           room(corridor),
+	   door(door1),
+	   door(door2),
+	   door(door3),
            connected(room1, corridor),
            connected(room2, corridor),
            connected(room3, corridor),
+           connected(corridor, room1),
+           connected(corridor, room2),
+           connected(corridor, room3),
            connected(room1, door1),
            connected(room2, door2),
            connected(room3, door3),
+           connected(door1, room1),
+           connected(door2, room2),
+           connected(door3, room3),
            connected(corridor, door1),
            connected(corridor, door2),
-           connected(corridor, door3)
+           connected(corridor, door3),
+           connected(door1, corridor),
+           connected(door2, corridor),
+           connected(door3, corridor)
            ], Result).
 
 
@@ -63,12 +72,6 @@ shakey_help :-
 action(
     move(From, To),
     [room(From), room(To), in(shakey, From), connected(To, From), connected(From, Door), connected(To, Door), status(Door, open)],
-    [in(shakey, To)],
-    [in(shakey, From)]).
-
-action(
-    move(From, To),
-    [room(From), room(To), in(shakey, From), connected(From, To), connected(From, Door), connected(To, Door), status(Door, open)],
     [in(shakey, To)],
     [in(shakey, From)]).
 
